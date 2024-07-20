@@ -1,7 +1,19 @@
 import streamlit as st
+import subprocess
+import sys
+import time
+
+# Check if the BeautifulSoup4 package is installed
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    # Install the package if not present
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "beautifulsoup4"])
+    from bs4 import BeautifulSoup
+
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
+import time
 
 # Function to safely convert scores
 def convert_score(score):
@@ -63,9 +75,12 @@ st.title('Golf Leaderboard Notifier')
 
 # Function to refresh the page every 10 seconds
 def refresh():
-    st.experimental_set_query_params(
-        refresh=time.time()
-    )
+    with st.spinner('Wait for it...'):
+        time.sleep(10)
+        st.title('Test app')
+        st.write('1')
+        st.write('2')
+        st.success('Done!')
 
 teams = scrape_leaderboard()
 
@@ -74,9 +89,3 @@ for i, team in enumerate(teams):
     st.subheader(f"Team {i + 1}: {team['Team Name']} - Score: {team['Team Score']}")
     players_df = pd.DataFrame(team['Players'])
     st.dataframe(players_df)
-
-# Refresh the page every 10 seconds after loading
-st.button("Refresh", on_click=refresh)
-st.experimental_set_query_params(
-    refresh=time.time()
-)
