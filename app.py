@@ -23,6 +23,7 @@ def convert_score(score):
         return float('inf')  # Use a high value to push invalid scores to the end
 
 # Function to scrape the leaderboard data
+@st.cache_data(ttl=300, max_entries=1)
 def scrape_leaderboard():
     url = 'https://www.easyofficepools.com/leaderboard/?p=349290&scoring=To%20Par'
     response = requests.get(url)
@@ -76,9 +77,9 @@ def highlight_changes(players, previous_scores):
 
         if prev_score is not None:
             if current_score < prev_score:
-                player['Player Score'] = f"⬆️ {current_score}"  # Highlight green
+                player['Player Score'] = f"⬇️ {current_score}"  # Highlight green
             elif current_score > prev_score:
-                player['Player Score'] = f"⬇️ {current_score}"  # Highlight red
+                player['Player Score'] = f"⬆️ {current_score}"  # Highlight red
 
         previous_scores[player['Player Name']] = current_score
 
@@ -105,9 +106,9 @@ new_teams = find_new_top_10_teams(current_teams, st.session_state.previous_top_1
 
 # Display notification if there are new teams in the top 10
 if new_teams:
-    st.write("### New teams entered the top 10:")
+    st.write("### <span style='color:green;'>New teams entered the top 10:</span>", unsafe_allow_html=True)
     for team in new_teams:
-        st.write(f"**{team}** has entered the top 10!")
+        st.write(f"**<span style='color:green;'>{team}</span>** has entered the top 10!", unsafe_allow_html=True)
 
 # Update the previous top 10 teams in the session state
 st.session_state.previous_top_10_teams = current_teams
