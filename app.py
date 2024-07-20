@@ -23,7 +23,6 @@ def convert_score(score):
         return float('inf')  # Use a high value to push invalid scores to the end
 
 # Function to scrape the leaderboard data
-@st.cache_data(ttl=300)
 def scrape_leaderboard():
     url = 'https://www.easyofficepools.com/leaderboard/?p=349290&scoring=To%20Par'
     response = requests.get(url)
@@ -77,9 +76,9 @@ def highlight_changes(players, previous_scores):
 
         if prev_score is not None:
             if current_score < prev_score:
-                player['Player Score'] = f"⬇️ {current_score}"  # Highlight green
+                player['Player Score'] = f"⬆️ {current_score}"  # Highlight green
             elif current_score > prev_score:
-                player['Player Score'] = f"⬆️ {current_score}"  # Highlight red
+                player['Player Score'] = f"⬇️ {current_score}"  # Highlight red
 
         previous_scores[player['Player Name']] = current_score
 
@@ -130,13 +129,14 @@ for i, team in enumerate(current_teams):
     
     st.dataframe(players_df)
 
-# Refresh the page every 20 seconds if there are changes
+# Refresh the page every 10 seconds if there are changes
 if should_update or new_teams:
     st.experimental_set_query_params(
         refresh=time.time()
     )
-    time.sleep(20)
+    time.sleep(10)
     st.experimental_rerun()
 else:
-    time.sleep(20)
+    time.sleep(10)
     st.experimental_rerun()
+
