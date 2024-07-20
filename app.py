@@ -77,13 +77,28 @@ def highlight_changes(players, previous_scores):
 
         if prev_score is not None:
             if current_score < prev_score:
-                player['Player Score'] = f"⬇️ {current_score}"  # Highlight green
+                player['Highlight'] = 'green'  # Highlight green
             elif current_score > prev_score:
-                player['Player Score'] = f"⬆️ {current_score}"  # Highlight red
+                player['Highlight'] = 'red'  # Highlight red
+            else:
+                player['Highlight'] = ''  # No highlight
+        else:
+            player['Highlight'] = ''  # No highlight
 
         previous_scores[player['Player Name']] = current_score
 
     return players, previous_scores
+
+# Function to apply styles based on the highlight
+def apply_styles(df):
+    def highlight_cell(s):
+        if s.Highlight == 'green':
+            return ['background-color: lightgreen'] * len(s)
+        elif s.Highlight == 'red':
+            return ['background-color: lightcoral'] * len(s)
+        else:
+            return [''] * len(s)
+    return df.style.apply(highlight_cell, axis=1)
 
 # Function to find new teams in the top 10
 def find_new_top_10_teams(current_teams, previous_teams):
@@ -101,8 +116,9 @@ if 'previous_top_10_teams' not in st.session_state:
 if 'previous_scores' not in st.session_state:
     st.session_state.previous_scores = {}
 
-# Scrape the leaderboard data
-current_teams = scrape_leaderboard()
+# Scrape the leaderboard data with a custom spinner message
+with st.spinner('Updating leaderboard...'):
+    current_teams = scrape_leaderboard()
 
 # Find new teams in the top 10
 new_teams = find_new_top_10_teams(current_teams, st.session_state.previous_top_10_teams)
@@ -123,18 +139,19 @@ for i, team in enumerate(current_teams):
     players, st.session_state.previous_scores = highlight_changes(team['Players'], st.session_state.previous_scores)
     players_df = pd.DataFrame(players)
     
-    # Convert all scores to strings before displaying and checking
-    players_df['Player Score'] = players_df['Player Score'].astype(str)
+    # Apply styles based on score changes
+    styled_df = apply_styles(players_df)
     
     # Check if there are any changes in the scores
     for player in players:
-        if isinstance(player['Player Score'], str) and ("⬇️" in player['Player Score'] or "⬆️" in player['Player Score']):
+        if player['Highlight']:
             should_update = True
     
-    st.dataframe(players_df)
+    st.dataframe(styled_df)
 
 # Auto refresh the page every 10 seconds
 st.experimental_set_query_params(refresh=time.time())
 time.sleep(10)
 st.experimental_rerun()
+
 
