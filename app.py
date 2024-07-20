@@ -23,7 +23,7 @@ def convert_score(score):
         return float('inf')  # Use a high value to push invalid scores to the end
 
 # Function to scrape the leaderboard data
-@st.cache_data(ttl=300, max_entries=1)
+@st.cache_data(ttl=10)
 def scrape_leaderboard():
     url = 'https://www.easyofficepools.com/leaderboard/?p=349290&scoring=To%20Par'
     response = requests.get(url)
@@ -101,7 +101,10 @@ if 'previous_top_10_teams' not in st.session_state:
 if 'previous_scores' not in st.session_state:
     st.session_state.previous_scores = {}
 
+# Scrape the leaderboard data
 current_teams = scrape_leaderboard()
+
+# Find new teams in the top 10
 new_teams = find_new_top_10_teams(current_teams, st.session_state.previous_top_10_teams)
 
 # Display notification if there are new teams in the top 10
@@ -130,14 +133,8 @@ for i, team in enumerate(current_teams):
     
     st.dataframe(players_df)
 
-# Refresh the page every 10 seconds if there are changes
-if should_update or new_teams:
-    st.experimental_set_query_params(
-        refresh=time.time()
-    )
-    time.sleep(10)
-    st.experimental_rerun()
-else:
-    time.sleep(10)
-    st.experimental_rerun()
+# Auto refresh the page every 10 seconds
+st.experimental_set_query_params(refresh=time.time())
+time.sleep(10)
+st.experimental_rerun()
 
