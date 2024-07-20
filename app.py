@@ -68,21 +68,55 @@ def scrape_leaderboard():
     teams = sorted(teams, key=lambda x: x['Team Score'])[:10]
     return teams
 
+# Function to highlight score changes
+def highlight_changes(players, previous_scores):
+    for player in players:
+        current_score = player['Player Score']
+        prev_score = previous_scores.get(player['Player Name'])
+
+        if prev_score is not None:
+            if current_score < prev_score:
+                player['Player Score'] = f"⬇️ {current_score}"  # Highlight green
+            elif current_score > prev_score:
+                player['Player Score'] = f"⬆️ {current_score}"  # Highlight red
+
+        previous_scores[player['Player Name']] = current_score
+
+    return players, previous_scores
+
+# Function to find new teams in the top 10
+def find_new_top_10_teams(current_teams, previous_teams):
+    current_team_names = {team['Team Name'] for team in current_teams}
+    previous_team_names = {team['Team Name'] for team in previous_teams}
+    new_teams = current_team_names - previous_team_names
+    return new_teams
+
 # Main app
 st.title('Golf Leaderboard Notifier')
 
-# Function to refresh the page every 10 seconds
-def refresh():
-    st.experimental_set_query_params(
-        refresh=time.time()
-    )
+# Initialize session state for previous top 10 teams and scores
+if 'previous_top_10_teams' not in st.session_state:
+    st.session_state.previous_top_10_teams = []
+if 'previous_scores' not in st.session_state:
+    st.session_state.previous_scores = {}
 
-teams = scrape_leaderboard()
+current_teams = scrape_leaderboard()
+new_teams = find_new_top_10_teams(current_teams, st.session_state.previous_top_10_teams)
 
-# Display each team's information
-for i, team in enumerate(teams):
+# Display notification if there are new teams in the top 10
+if new_teams:
+    st.write("### New teams entered the top 10:")
+    for team in new_teams:
+        st.write(f"**{team}** has entered the top 10!")
+
+# Update the previous top 10 teams in the session state
+st.session_state.previous_top_10_teams = current_teams
+
+# Display each team's information and highlight changes
+for i, team in enumerate(current_teams):
     st.subheader(f"Team {i + 1}: {team['Team Name']} - Score: {team['Team Score']}")
-    players_df = pd.DataFrame(team['Players'])
+    players, st.session_state.previous_scores = highlight_changes(team['Players'], st.session_state.previous_scores)
+    players_df = pd.DataFrame(players)
     st.dataframe(players_df)
 
 # Auto refresh the page every 10 seconds after loading
