@@ -23,6 +23,7 @@ def convert_score(score):
         return float('inf')  # Use a high value to push invalid scores to the end
 
 # Function to scrape the leaderboard data
+@st.cache_data(ttl=300)
 def scrape_leaderboard():
     url = 'https://www.easyofficepools.com/leaderboard/?p=349290&scoring=To%20Par'
     response = requests.get(url)
@@ -113,15 +114,29 @@ if new_teams:
 st.session_state.previous_top_10_teams = current_teams
 
 # Display each team's information and highlight changes
+should_update = False
 for i, team in enumerate(current_teams):
     st.subheader(f"Team {i + 1}: {team['Team Name']} - Score: {team['Team Score']}")
     players, st.session_state.previous_scores = highlight_changes(team['Players'], st.session_state.previous_scores)
     players_df = pd.DataFrame(players)
+    
+    # Convert all scores to strings before displaying and checking
+    players_df['Player Score'] = players_df['Player Score'].astype(str)
+    
+    # Check if there are any changes in the scores
+    for player in players:
+        if isinstance(player['Player Score'], str) and ("⬇️" in player['Player Score'] or "⬆️" in player['Player Score']):
+            should_update = True
+    
     st.dataframe(players_df)
 
-# Auto refresh the page every 10 seconds after loading
-st.experimental_set_query_params(
-    refresh=time.time()
-)
-time.sleep(10)
-st.experimental_rerun()
+# Refresh the page every 20 seconds if there are changes
+if should_update or new_teams:
+    st.experimental_set_query_params(
+        refresh=time.time()
+    )
+    time.sleep(20)
+    st.experimental_rerun()
+else:
+    time.sleep(20)
+    st.experimental_rerun()
